@@ -36,12 +36,28 @@ class PDFService {
 
       const page = await browser.newPage();
 
+      console.log("Setting up page event listeners...");
+      page
+        .on("console", (msg) => console.log("PAGE LOG:", msg.text()))
+        .on("pageerror", (err) => console.error("PAGE ERROR:", err.message))
+        .on("response", (response) =>
+          console.log("RESPONSE:", response.url(), response.status())
+        );
+
+      console.log("Setting user-agent to mimic a real browser...");
+      await page.setUserAgent(
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36"
+      );
+
       if (isUrl) {
         console.log(`Navigating to URL: ${html}`);
         await page.goto(html, {
-          waitUntil: "networkidle0",
-          timeout: 60000,
+          waitUntil: "domcontentloaded",
+          timeout: 120000, // Increased timeout to handle slow-loading pages
         });
+
+        console.log("Waiting for page to fully load...");
+        //await page.waitForTimeout(5000); // Wait for additional time to ensure rendering
 
         // Try to accept cookies after page load
         console.log("Attempting to accept cookies...");
@@ -133,7 +149,7 @@ class PDFService {
         }
       } else {
         console.log("Setting page content...");
-        await page.setContent(html, { waitUntil: "networkidle0" });
+        await page.setContent(html, { waitUntil: "domcontentloaded" });
       }
 
       console.log("Generating PDF...");
